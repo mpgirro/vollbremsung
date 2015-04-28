@@ -78,6 +78,10 @@ In order to only match a given range of file extensions, the `--match` option ac
 + Fixed a bug when probing files with square braces in their path.
 + Fixed a bug where file names where not correctly extracted from the files path and the files extension.
 
+**0.0.15**
+
++ Fixed another case of the bug of **0.0.13**.
+
 **0.0.14**
 
 + Fixed the bug that **0.0.13** should have fixed.
