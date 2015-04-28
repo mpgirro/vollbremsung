@@ -51,9 +51,13 @@ In order to only match a given range of file extensions, the `--match` option ac
 
 ## Changelog
 
-**0.0.20**
+**0.0.21**
 
 + Added the `--match` option.
+
+**0.0.20**
+
++ Added `.webm` to the matching file extensions.
 
 **0.0.19**
 
