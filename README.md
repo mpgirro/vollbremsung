@@ -2,7 +2,7 @@
 
 [![Gem Version](https://badge.fury.io/rb/vollbremsung.svg)](http://badge.fury.io/rb/vollbremsung)
 
-`vollbremsung` is a [Handbrake](https://handbrake.fr) bulk encoding tool, desigend to reencode a file structure to a DLNA enabled TV compatible format comfortably.
+`vollbremsung` is a [Handbrake](https://handbrake.fr) bulk encoding tool, designed to reencode a file structure to a DLNA enabled TV compatible format comfortably.
 
 ## Installation
 
@@ -16,7 +16,7 @@ You need to have `ffmpeg`, `ffprobe` and `HandbrakeCLI` (on FreeBSD it's `HandBr
 
 	vollbremsung [options] target [target [...]]
 
-It takes target paths and probes them for suited files. If a target path is a file, it is the only match, if it is a directory all containing files with a matching file type (basically all the non MP4 multimedia types like .avi, .flv, .mov, etc.) are taken. The `--recursive` option will extend the search scope to probe the sub filetree as well. It furthermore analyses each file for its structure utilising [ffmpegs](https://www.ffmpeg.org) `ffprobe` tool in order to extend Handbrakes default preset, processing *all* audio and subtitle tracks, not only the first ones.
+It takes target paths and probes them for suited files. If a target path is a file, it is the only match, if it is a directory all containing files with a matching file type (basically all the non MP4 multimedia types like `avi`, `flv`, `mov`, etc.) are taken. The `--recursive` option will extend the search scope to probe the sub filetree as well. It furthermore analyses each file for its structure utilising [ffmpegs](https://www.ffmpeg.org) `ffprobe` tool in order to extend Handbrakes default preset, processing *all* audio and subtitle tracks, not only the first ones.
 
 The video streams will be converted to h.264 while audio streams will enjoy the AAC codec. Every DLNA enabled TV should be able to handle these two.
 
@@ -57,7 +57,7 @@ In order to only match a given range of file extensions, the `--match` option ac
 
 **0.0.20**
 
-+ Added `.webm` to the matching file extensions.
++ Added `webm` to the matching file extensions.
 
 **0.0.19**
 
@@ -71,7 +71,7 @@ In order to only match a given range of file extensions, the `--match` option ac
 
 + Added support for multiple targets.
 + Added option for `mp4` as file extension instead of `m4v`.
-+ Fixed a bug which made the `PRESET` agrument of `--x264-preset` optional (and the option thereby useless).
++ Fixed a bug which made the `PRESET` argument of `--x264-preset` optional (and the option thereby useless).
 
 **0.0.16**
 
@@ -88,7 +88,7 @@ In order to only match a given range of file extensions, the `--match` option ac
 
 **0.0.12**
 
-+ Changed audio codec to AAC only. AC3, DTSHD, DTS and MP3 will no longer be carried on any more.
++ Changed audio codec to AAC only. AC3, DTSHD, DTS and MP3 audio streams will no longer be passed through any more.
 + Changed file extension of the output files to `m4v`.
 
 **0.0.11**
