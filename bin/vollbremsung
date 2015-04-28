@@ -29,7 +29,10 @@ def escape_glob(s)
   s.gsub(/[\\\{\}\[\]\*\?]/) { |x| "\\"+x }
 end
 
-options = { :extension => "m4v" }
+options = {
+    :extension => "m4v",
+    :match_list => Vollbremsung::CONVERT_TYPES
+}
 
 OptionParser.new do |opts|
   opts.banner = Vollbremsung::USAGE
@@ -141,15 +144,11 @@ unless options[:list_only]
 end
 
 
-
-
 #HANDBRAKE_OPTIONS = "--encoder x264 --quality 20.0 --aencode faac -B 160 --mixdown dpl2 --arate Auto -D 0.0 --format mp4 --markers --audio-copy-mask aac,ac3,dtshd,dts,mp3 --audio-fallback ffac3 --x264-preset veryfast --loose-anamorphic --modulus 2"
 
 
 target_files = []
-
 scope = options[:recursive] ? "/**/*" : "/*"
-match_ext = options[:match_list] ? options[:match_list] : Vollbremsung::CONVERT_TYPES
 
 ARGV.each do |target|
 
@@ -160,7 +159,7 @@ ARGV.each do |target|
 
     Dir[escape_glob(File.absolute_path(target)) + scope].sort.each do |file|
       unless File.directory?(file)
-        if match_ext.include?(File.extname(file).downcase[1..-1])
+        if options[:match_list].include?(File.extname(file).downcase[1..-1])
           puts "* " + File.absolute_path(file)[File.absolute_path(target).length+1..-1]
           target_files << [file,target] # file and provided target_dir
         end
