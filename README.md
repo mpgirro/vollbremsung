@@ -61,7 +61,7 @@ In order to only match a given range of file extensions, the `--match` option ac
 
 **0.0.19**
 
-+ Delete temporary file when mp4 title could not be changed.
++ Fixed a bug where temporary files were not deleted when their mp4 title could not be changed.
 
 **0.0.18**
 
