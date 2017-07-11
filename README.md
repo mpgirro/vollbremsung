@@ -51,6 +51,10 @@ In order to only match a given range of file extensions, the `--match` option ac
 
 ## Changelog
 
+**1.0.0**
+
++ TODO
+
 **0.0.21**
 
 + Added the `--match` option.

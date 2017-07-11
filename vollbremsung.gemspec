@@ -6,11 +6,11 @@ require 'vollbremsung'
 Gem::Specification.new do |spec|
   spec.name        = 'vollbremsung'
   spec.version     = Vollbremsung::VERSION
-  spec.date        = '2015-04-28'
+  spec.date        = '2017-07-11'
   spec.summary     = "Handbrake bulk encoding tool"
   spec.description = "vollbremsung is a Handbrake bulk encoding tool, designed to reencode a file structure to a DLNA enabled TV compatible format comfortably."
   spec.author      = "Maximilian Irro"
-  spec.email       = 'max@disposia.org'
+  spec.email       = 'max@irro.at'
   spec.files       = `git ls-files -z`.split("\x0")
   spec.executables = ['vollbremsung']
   spec.homepage    = 'https://github.com/mpgirro/vollbremsung'
