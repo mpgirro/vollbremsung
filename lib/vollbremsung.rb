@@ -9,6 +9,11 @@ module Vollbremsung
   FFPROBE_OPTIONS     = "-v quiet -print_format json -show_format -show_streams"
   X264_DEFAULT_PRESET = "veryfast".freeze
 
+  case RUBY_PLATFORM
+    when /darwin/ then HANDBRAKE_CLI = "HandBrakeCLI"
+    else HANDBRAKE_CLI = "HandbrakeCLI"
+  end
+
 #  def log(msg)
 #    puts "["+Time.new.strftime("%Y-%m-%d %H:%M:%S")+"] #{msg}"
 #  end
@@ -86,7 +91,7 @@ module Vollbremsung
       return astreams, sstreams
     end # def parse_metadata
 
-    def full_outpath(infile)
+    def full_outpath(infile, target_dir, extension)
       infile_basename = File.basename(infile)
       infile_basename_noext = File.basename(infile, File.extname(infile)) # without ext
       infile_dirname = File.dirname(infile)
@@ -98,27 +103,44 @@ module Vollbremsung
           File.basename(target_dir)
         end
 
-      outfile = "#{infile_path_noext}.#{options[:extension]}"
+      outfile = "#{infile_path_noext}.#{extension}"
 
       return outfile, infile_relative_path
     end # def full_outpath
 
     def run_handbrake(infile, outfile, astreams, sstreams, x264_preset=Vollbremsung::X264_DEFAULT_PRESET)
 
-      #%x( #{HANDBRAKE_CLI} #{HANDBRAKE_OPTIONS} --audio #{(1..astreams.count).to_a.join(',')} --aname #{astreams.names.join(',')} --subtitle #{(1..sstreams.count).to_a.join(',')} -i \"#{infile}\" -o \"#{outfile}\" 2>&1 )
-
       begin
-          HandBrake::CLI.new.input(infile).encoder('x264').quality('20.0').aencoder('faac').
-          ab('160').mixdown('dpl2').arate('Auto').drc('0.0').format('mp4').markers.
-          audio_copy_mask('aac').audio_fallback('ffac3').x264_preset(options[:x264_preset]).
-          loose_anamorphic.modulus('2').audio((1..astreams.count).to_a.join(',')).aname(astreams.names.join(',')).
-          subtitle((1..sstreams.count).to_a.join(',')).output(outfile)
+          #HandBrake::CLI.new.input(infile).encoder('x264').quality('20.0').aencoder('faac').
+          #ab('160').mixdown('dpl2').arate('Auto').drc('0.0').format('mp4').markers.
+          #audio_copy_mask('aac').audio_fallback('ffac3').x264_preset(x264_preset).
+          #loose_anamorphic.modulus('2').audio((1..astreams.count).to_a.join(',')).aname(astreams.names.join(',')).
+          #subtitle((1..sstreams.count).to_a.join(',')).output(outfile)
+          cmd = p %{ #{HANDBRAKE_CLI} \
+              --encoder x265 \
+              --quality 20.0 \
+              --aencoder faac \
+              --audio-copy-mask aac \
+              --audio-fallback ffac3 \
+              --x264-preset #{x264_preset} \
+              --loose-anamorphic --modulus 2 \
+              --audio #{(1..astreams.count).to_a.join(',')} \
+              --aname #{astreams.names.join(',')} \
+              --subtitle #{(1..sstreams.count).to_a.join(',')} \
+              -i \"#{infile}\" -o \"#{outfile}\" 2>&1 }
+          #@logger.info "running handbrake cmd: #{cmd}"
+          %x( #{cmd} )
 
-          # if we make it here, encoding went well
-          @logger.info "SUCCESS: encoding done"
-          return true
+          if $?.exitstatus == 0
+            # if we make it here, encoding went well
+            @logger.info "SUCCESS: encoding done"
+            return true
+          else
+            @logger.error "Handbrake exited with error code #{$?.exitstatus}"
+            return false
+          end
         rescue
-          @logger.error "Handbrake exited with an error"
+          @logger.error "Handbrake exception"
           return false
         end # HandBrake::CLI    
     end # def run_handbrake
@@ -168,7 +190,7 @@ module Vollbremsung
           end
 
           astreams, sstreams = parse_metadata(metadata)
-          outfile, infile_relative_path = full_outpath(infile)
+          outfile, infile_relative_path = full_outpath(infile, target_dir, options[:extension])
 
           @logger.info "processing: #{infile_relative_path}"
 
