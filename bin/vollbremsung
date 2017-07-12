@@ -8,10 +8,6 @@ require 'optparse'
 require 'handbrake'
 require 'vollbremsung'
 
-
-
-
-
 # square brackets have a special meaning in the context of shell globbing
 # --> escape them in order to find files in directories with [, ], {, }
 # symbols in their path
@@ -21,7 +17,7 @@ end
 
 options = {
     :extension => "m4v",
-    :match_list => Vollbremsung::CONVERT_TYPES
+    :match_extensions => Vollbremsung::CONVERT_TYPES
 }
 
 OptionParser.new do |opts|
@@ -47,7 +43,7 @@ OptionParser.new do |opts|
   end
 
   opts.on("--match ext1,ext2,ext3", String, "Match only specific file extensions") do |es|
-      options[:match_list] = es.split(',')
+      options[:match_extensions] = es.split(',')
   end
 
   opts.on("--mp4-ext", "Use 'mp4' as file extension instead of 'm4v'") do |flag|
@@ -133,51 +129,4 @@ unless options[:list_only]
   File.delete 'mkmf.log' if File.exists?('mkmf.log') # find_executable seems to create such file in case executable is not found
 end
 
-
-#HANDBRAKE_OPTIONS = "--encoder x264 --quality 20.0 --aencode faac -B 160 --mixdown dpl2 --arate Auto -D 0.0 --format mp4 --markers --audio-copy-mask aac,ac3,dtshd,dts,mp3 --audio-fallback ffac3 --x264-preset veryfast --loose-anamorphic --modulus 2"
-
-items = Vollbremsung.crawl(ARGV, options[:recursive])
-
-exit if options[:list_only]
-
-items.each do |infile, target_dir|
-
-  metadata = Vollbremsung.ffprobe(infile)
-  if metadata.nil?
-    Vollbremsung.log "ERROR retrieving metadata -- skipping this file"
-    next
-  end
-
-  astreams, sstreams = Vollbremsung.parse_metadata(metadata)
-  outfile, infile_relative_path = Vollbremsung.full_outpath(infile)
-
-  Vollbremsung.log "processing: #{infile_relative_path}"
-
-  success = Vollbremsung.convert(infile,outfile,astreams,sstreams,options[:x264_preset])
-
-  if success
-    infile_size = File.size(infile)
-    outfile_size = File.size(outfile)
-
-    Vollbremsung.log "compression ratio: %.2f" % (outfile_size.to_f / infile_size.to_f)
-
-    if options[:title]
-      write_mp4_title(infile, outfile)
-    end # if options[:title]
-
-    if options[:move]
-      Vollbremsung.log "moving source file to *.old"
-      File.rename(infile, "#{infile}.old") rescue log "ERROR: renaming source file"
-    elsif options[:delete]
-      Vollbremsung.log "deleting source file"
-      File.delete(infile) rescue log "ERROR: deleting source file"
-    end
-
-  end # if success
-end # target_files.each
-
-if target_files.empty?
-  Vollbremsung.log "nothing to do"
-else
-  Vollbremsung.log "all items processed"
-end
+Vollbremsung.process(ARGV,options)
