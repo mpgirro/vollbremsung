@@ -7,16 +7,16 @@ module Vollbremsung
   CONVERT_TYPES       = ['avi','flv','mkv','mpg','mov','ogm','webm','wmv']
   FFMPEG_OPTIONS      = "-map 0 -acodec copy -vcodec copy -scodec copy"
   FFPROBE_OPTIONS     = "-v quiet -print_format json -show_format -show_streams"
-  X264_DEFAULT_PRESET = "veryfast".freeze
+  DEFAULT_ENCODER     = "x264".freeze
+  DEFAULT_PRESET      = "veryfast".freeze
+  DEFAULT_QUALITY     = 22
 
   case RUBY_PLATFORM
-    when /darwin/ then HANDBRAKE_CLI = "HandBrakeCLI"
-    else HANDBRAKE_CLI = "HandbrakeCLI"
+  when /darwin/ then 
+    HANDBRAKE_CLI = "HandBrakeCLI".freeze
+  else 
+    HANDBRAKE_CLI = "HandbrakeCLI".freeze
   end
-
-#  def log(msg)
-#    puts "["+Time.new.strftime("%Y-%m-%d %H:%M:%S")+"] #{msg}"
-#  end
 
   class StreamDescr < Struct.new(:count,:names)
     def initialize
@@ -29,9 +29,26 @@ module Vollbremsung
     def initialize
       @logger = Logger.new STDOUT
       @logger.level = Logger::INFO
-      @logger.datetime_format = '%Y-%m-%d %H:%M:%S '
+      #@logger.datetime_format = '%Y-%m-%d %H:%M:%S '
+      @logger.formatter = proc do |severity, datetime, progname, msg|
+        date_format = datetime.strftime("%Y-%m-%d %H:%M:%S")
+        if severity == "INFO" or severity == "WARN"
+            "[#{date_format}] #{severity}  : #{msg}\n"
+        else        
+            "[#{date_format}] #{severity} : #{msg}\n"
+        end
+      end # proc do
+    end # def initialize
+
+    # square brackets have a special meaning in the context of shell globbing
+    # --> escape them in order to find files in directories with [, ], {, }
+    # symbols in their path
+    private
+    def escape_glob(s)
+      s.gsub(/[\\\{\}\[\]\*\?]/) { |x| "\\"+x }
     end
 
+    private
     def ffprobe(file)
       stdout,stderr,status = Open3.capture3("ffprobe #{Vollbremsung::FFPROBE_OPTIONS} \"#{file}\"")
       if status.success?
@@ -42,6 +59,7 @@ module Vollbremsung
       end
     end # def ffprobe
 
+    private
     def match_files(targets, match_extensions, recursive)
       scope = recursive ? "/**/*" : "/*"
       matches = []
@@ -71,6 +89,7 @@ module Vollbremsung
       return matches
     end # def match_files
 
+    private
     def parse_metadata(metadata)
       astreams = Vollbremsung::StreamDescr.new
       sstreams = Vollbremsung::StreamDescr.new
@@ -91,6 +110,7 @@ module Vollbremsung
       return astreams, sstreams
     end # def parse_metadata
 
+    private
     def full_outpath(infile, target_dir, extension)
       infile_basename = File.basename(infile)
       infile_basename_noext = File.basename(infile, File.extname(infile)) # without ext
@@ -108,49 +128,44 @@ module Vollbremsung
       return outfile, infile_relative_path
     end # def full_outpath
 
-    def run_handbrake(infile, outfile, astreams, sstreams, x264_preset=Vollbremsung::X264_DEFAULT_PRESET)
+    private
+    def run_handbrake(infile, outfile, astreams, sstreams, options)
 
-      begin
-          #HandBrake::CLI.new.input(infile).encoder('x264').quality('20.0').aencoder('faac').
-          #ab('160').mixdown('dpl2').arate('Auto').drc('0.0').format('mp4').markers.
-          #audio_copy_mask('aac').audio_fallback('ffac3').x264_preset(x264_preset).
-          #loose_anamorphic.modulus('2').audio((1..astreams.count).to_a.join(',')).aname(astreams.names.join(',')).
-          #subtitle((1..sstreams.count).to_a.join(',')).output(outfile)
-          cmd = p %{ #{HANDBRAKE_CLI} \
-              --encoder x265 \
-              --quality 20.0 \
-              --aencoder faac \
-              --audio-copy-mask aac \
-              --audio-fallback ffac3 \
-              --x264-preset #{x264_preset} \
-              --loose-anamorphic --modulus 2 \
-              --audio #{(1..astreams.count).to_a.join(',')} \
-              --aname #{astreams.names.join(',')} \
-              --subtitle #{(1..sstreams.count).to_a.join(',')} \
-              -i \"#{infile}\" -o \"#{outfile}\" 2>&1 }
-          #@logger.info "running handbrake cmd: #{cmd}"
-          %x( #{cmd} )
+      handbrake_cmd = 
+        %{ #{HANDBRAKE_CLI} \
+          --encoder #{options[:encoder]} \
+          --encoder-preset #{options[:preset]} \
+          --quality #{options[:quality]} \
+          --aencoder faac \
+          --audio-copy-mask aac \
+          --audio-fallback ffac3 \
+          --loose-anamorphic --modulus 2 \
+          --audio #{(1..astreams.count).to_a.join(',')} \
+          --aname #{astreams.names.join(',')} \
+          --subtitle #{(1..sstreams.count).to_a.join(',')} \
+          -i \"#{infile}\" -o \"#{outfile}\" 2>&1 
+        }
+      #@logger.info "running handbrake cmd: #{handbrake_cmd}"
+      %x( #{handbrake_cmd} )
 
-          if $?.exitstatus == 0
-            # if we make it here, encoding went well
-            @logger.info "SUCCESS: encoding done"
-            return true
-          else
-            @logger.error "Handbrake exited with error code #{$?.exitstatus}"
-            return false
-          end
-        rescue
-          @logger.error "Handbrake exception"
-          return false
-        end # HandBrake::CLI    
+      if $?.exitstatus == 0
+        @logger.info "encoding done"
+        return true
+      else
+        @logger.error "Handbrake exited with error code #{$?.exitstatus}"
+        return false
+      end 
     end # def run_handbrake
 
+    private
     def write_mp4_title(infile, outfile)
 
       @logger.info "setting MP4 title"
 
       infile_noext = File.join( File.dirname(infile), File.basename(infile,File.extname(infile)))
       tmpfile = infile_noext + ".tmp.mp4"
+
+      # TODO check if ffmpeg does exists (should if ffprobe is availabe, but just to make sure)
 
       %x( ffmpeg -i \"#{outfile}\" -metadata title=\"#{infile_basename_noext}\" #{Vollbremsung::FFMPEG_OPTIONS} \"#{tmpfile}\" 2>&1 )
 
@@ -168,6 +183,7 @@ module Vollbremsung
       end
     end # def write_mp4_title    
 
+    public
     def process(targets, options)
 
       matches = match_files(ARGV, options[:match_extensions], options[:recursive])
@@ -194,12 +210,9 @@ module Vollbremsung
 
           @logger.info "processing: #{infile_relative_path}"
 
-          success = run_handbrake(infile, outfile, astreams, sstreams, options[:x264_preset])
+          success = run_handbrake(infile, outfile, astreams, sstreams, options)
 
           if success
-            #infile_size = File.size(infile)
-            #outfile_size = File.size(outfile)
-
             @logger.info "compression ratio: %.2f" % (File.size(outfile).to_f / File.size(infile).to_f)
 
             if options[:title]
@@ -217,10 +230,9 @@ module Vollbremsung
           end # if success
         end # target_files.each
 
-        @logger.info "🚗 finally come to a halt"
+        @logger.info "🚗  finally came to a halt"
       end # items.empty?
     end # def process
-
   end # class Brake
 
   def process(targets, options)

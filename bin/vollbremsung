@@ -5,15 +5,7 @@ require 'mkmf' # part of stdlib
 require 'open3'
 require 'json'
 require 'optparse'
-require 'handbrake'
 require 'vollbremsung'
-
-# square brackets have a special meaning in the context of shell globbing
-# --> escape them in order to find files in directories with [, ], {, }
-# symbols in their path
-def escape_glob(s)
-  s.gsub(/[\\\{\}\[\]\*\?]/) { |x| "\\"+x }
-end
 
 options = {
     :extension => "m4v",
@@ -54,6 +46,16 @@ OptionParser.new do |opts|
     options[:move] = true
   end
 
+  opts.on("-q", "--quality VALUE", "Set quality value to use (default is: #{Vollbremsung::DEFAULT_QUALITY})") do |quality|
+    # TODO check if quality is an integer value in the range of acceptable values
+    begin
+      options[:quality] = quality.to_i
+    rescue
+      puts "Not a numer provided for option --quality value: #{quality}"
+      exit 6
+    end
+  end
+
   opts.on("-r", "--recursive", "Process subdirectories recursively as well") do |flag|
     options[:recursive] = true
   end
@@ -62,8 +64,12 @@ OptionParser.new do |opts|
     options[:title] = true
   end
 
-  opts.on("--x264-preset PRESET", String, "Set the x264-preset. Default is: #{Vollbremsung::X264_DEFAULT_PRESET}") do |preset|
-    options[:x264_preset] = preset
+  opts.on("--preset PRESET", String, "Set the x264/x265 preset. Default is: #{Vollbremsung::DEFAULT_PRESET}") do |preset|
+    options[:preset] = preset
+  end
+
+  opts.on("--x265", "Use x265 encoder for HEVC conversion") do |flag|
+    options[:encoder] = "x265".freeze
   end
 
   opts.on("--version", "Show program version information") do
@@ -82,8 +88,10 @@ if options[:version]
   exit
 end
 
-
-options[:x264_preset] = Vollbremsung::X264_DEFAULT_PRESET if options[:x264_preset].nil?
+# TODO move this to the top to the options[] init
+options[:encoder] = Vollbremsung::DEFAULT_QUALITY if options[:encoder].nil?
+options[:quality] = Vollbremsung::DEFAULT_QUALITY if options[:quality].nil?
+options[:preset] = Vollbremsung::DEFAULT_PRESET if options[:preset].nil?
 
 
 if ARGV[0].nil?
@@ -97,14 +105,14 @@ end
 ARGV.each do |target|
   unless File.exists?(target)
     puts "The target #{target} does not exist."
-    exit 1
+    exit 2
   end
 end
 
 if options[:move] && options[:delete]
   puts "--delete (-d) and --move (-m) are mutually exclusive - choose one!"
   puts "It is not possible to delete and move the source files at the same time."
-  exit 1
+  exit 3
 end
 
 # probe for required executable
@@ -115,7 +123,7 @@ unless options[:list_only]
     puts "You can get the executable from http://handbrake.fr/downloads.php"
 
     File.delete 'mkmf.log' if File.exists?('mkmf.log') # find_executable seems to create such file in case executable is not found
-    exit 1
+    exit 4
   end
 
   unless find_executable 'ffprobe'
@@ -123,7 +131,7 @@ unless options[:list_only]
     puts "ffprobe is part of ffmpeg. Install it for your system and run again."
 
     File.delete 'mkmf.log' if File.exists?('mkmf.log') # find_executable seems to create such file in case executable is not found
-    exit 1
+    exit 5
   end
 
   File.delete 'mkmf.log' if File.exists?('mkmf.log') # find_executable seems to create such file in case executable is not found
