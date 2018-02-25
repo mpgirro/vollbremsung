@@ -6,12 +6,13 @@ require 'vollbremsung/version'
 Gem::Specification.new do |spec|
   spec.name          = "vollbremsung"
   spec.version       = Vollbremsung::VERSION
-  spec.date          = "2017-07-11"
+  spec.platform      = Gem::Platform::RUBY
+  spec.date          = "2018-02-25"
   spec.author        = "Maximilian Irro"
   spec.email         = "max@irro.at"
 
   spec.summary       = "Handbrake bulk encoding tool"
-  spec.description   = "vollbremsung is a Handbrake bulk encoding tool, designed to reencode a file structure to a DLNA enabled TV compatible format comfortably."
+  spec.description   = "vollbremsung is a Handbrake bulk encoding tool, designed to re-encode a file structure to a DLNA enabled TV compatible format comfortably."
   spec.homepage      = "https://github.com/mpgirro/vollbremsung"
   spec.license       = "MIT"
 
@@ -21,8 +22,7 @@ Gem::Specification.new do |spec|
   spec.executables   = ["vollbremsung"]
   spec.require_paths = ["lib"]
 
-  spec.required_ruby_version = ">= 1.9.3"
-  spec.add_dependency "handbrake", "~> 0.4"
+  spec.required_ruby_version = ">= 2.0.0"
   spec.add_dependency "logger"
 
   spec.add_development_dependency "bundler", "~> 1.15"
