@@ -183,6 +183,15 @@ module Vollbremsung
       end
     end # def write_mp4_title    
 
+    private
+    def ratio(infile, outfile)
+      begin
+        return "%.2f" % (File.size(outfile).to_f / File.size(infile).to_f)
+      rescue
+        return "UNAVAILABLE"
+      end
+    end
+
     public
     def process(targets, options)
 
@@ -213,7 +222,7 @@ module Vollbremsung
           success = run_handbrake(infile, outfile, astreams, sstreams, options)
 
           if success
-            @logger.info "compression ratio: %.2f" % (File.size(outfile).to_f / File.size(infile).to_f)
+            @logger.info "compression ratio: " + ratio(outfile, infile)
 
             if options[:title]
               write_mp4_title(infile, outfile)
