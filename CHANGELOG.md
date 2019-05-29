@@ -1,5 +1,13 @@
 # Changelog
 
+**1.0.2**
+
++ Fixes size difference ratio calculation.
+
+**1.0.1**
+
++ Fixes an error where the application could terminate unintentionally
+
 **1.0.0**
 
 + Total refactoring of the codebase, new project structure
