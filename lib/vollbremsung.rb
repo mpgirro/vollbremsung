@@ -222,7 +222,7 @@ module Vollbremsung
           success = run_handbrake(infile, outfile, astreams, sstreams, options)
 
           if success
-            @logger.info "compression ratio: " + ratio(outfile, infile)
+            @logger.info "compression ratio: " + ratio(infile, outfile)
 
             if options[:title]
               write_mp4_title(infile, outfile)
